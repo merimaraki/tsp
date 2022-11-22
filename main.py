@@ -1,18 +1,53 @@
 import itertools as it
 import pulp as p
+import pandas as pd
+import numpy as np
+import matplotlib.pylab as plt
+import math
 
 class Problem():
     def __init__(self):
-        self.distance_matrix = [[0, 10, 15, 20],
-                                [10, 0, 35, 25],
-                                [15, 35, 0, 30],
-                                [20, 25, 30, 0]]
+        self.distance_matrix = []
         self.points          = []
         self.city_to_visit   = []
         self.num_of_cities   = 4
         self.route           = []
         self.first_city      = 0
         self.cost            = None
+
+        self.run()
+
+    def get_data(self):
+        try:
+            print("ENTER THE NUMBER OF CITIES\nΕισάγετε τον αριθμό των πόλεων που επιθυμείτε να επισκεφθεί ο περιοδεύων πωλητής\nΟι συντεταγμένες των πόλεων θα δημιουργηθούν τυχαία.")
+            a = int(input('>> '))
+            self.num_of_cities = a
+
+            rnd_x = np.random.randint(0, 100, self.num_of_cities)
+            rnd_y = np.random.randint(0, 100, self.num_of_cities)
+
+            self.define_points = pd.DataFrame({
+                'x': rnd_x,
+                'y': rnd_y,
+            })
+
+        except:
+            print("ERROR: Εισάγετε ξανά με τον σωστό τρόπο τις απαιτούμενες μεταβλητές.")
+            self.get_data()
+    
+    def build_matrix(self):
+        for i in range(self.num_of_cities):
+            row = []
+            for j in range(self.num_of_cities):
+                coords_i = [self.define_points.iloc[i, 0], self.define_points.iloc[i, 1]]
+                coords_j = [self.define_points.iloc[j, 0], self.define_points.iloc[j, 1]]
+                distance = round(math.dist(coords_i, coords_j), 2)
+                row.append(distance)
+
+            self.distance_matrix.append(row)
+        
+        print("\nDISTANCE MATRIX\nΟι αποστάσεις μεταξύ των πόλεων διαμορφώνονται ως εξής:\n")
+        print('\n'.join(['\t'.join([str(cell) for cell in row]) for row in self.distance_matrix]))
 
     def naive(self):
         # για 3 πόλεις (self.num_of_cities = 3)
@@ -147,6 +182,63 @@ class Problem():
         build_route(self.first_city)
         print(f'cost:{self.cost}\nroute:{self.route}')
 
+    def plot_data(self):
+        fig, ax = plt.figure(figsize=(5,5))
+        for i, row in self.define_points.iterrows():
+            if i == 0:
+                ax.scatter(row['x'], row['y'], c='red')
+                ax.text(row['x']+1, row['y']+1, 'start')
+            else:
+                ax.scatter(row['x'], row['y'], c='black')
+                ax.text(row['x']+1, row['y']+1, f'{i}')
+        
+        plt.xlim([-10, 110])
+        plt.ylim([-10, 110])
+        plt.title('The map of the cities that the travelling salesman will visit')
+        
+        nodes = [tuple(self.route[i:(i+2)]) for i in range(self.num_of_cities)]
+        arrowprops = dict(arrowstyle = '->', connectionstyle = 'arc3', edgecolor = 'green')
+        for i, j in nodes:
+            plt.annotate('', xy = [self.define_points.iloc[j]['x'], self.define_points.iloc[j]['y']], xytext = [self.define_points.iloc[i]['x'], self.define_points.iloc[i]['y']], arrowprops = arrowprops)      
+            
+        plt.show()
+
+
+    def run(self):
+        print('THE TRAVELLING SALESMAN PROBLEM\n')
+        self.get_data()
+        self.build_matrix()
+        
+        
+        print("\nCHOOSE SOLUTION\n", '''Πληκτρολογήστε: \n'''
+        '''-> 1 (naive) \n'''
+        '''-> 2 (nearest neighbor) αν επιθυμείτε το πρόβλημα να λυθεί με τη χρήση προγράμματος, που εντοπίζει τον κοντινότερο γείτονα κάθε σημείου. \n'''
+        '''-> 3 (dynamic) αν επιθυμείτε το πρόβλημα να λυθεί με δυναμικό προγραμματισμό\n'''
+        '''-> 3 (dynamic) αν επιθυμείτε το πρόβλημα να λυθεί με δυναμικό προγραμματισμό\n'''
+        '''-> 4 (linear) αν επιθυμείτε το πρόβλημα να λυθεί με γραμμικό προγραμματισμό\n'''
+        )
+
+        while 1:
+            sol = int(input('>> '))
+
+            if sol == 1:
+                self.naive()
+                break
+            elif sol == 2:
+                self.nearest_neighbor()
+                break
+            elif sol == 3:
+                self.dynamic()
+                break
+            elif sol == 4:
+                self.linear()
+                break
+            else:
+                print("ERROR: Πληκτρολογήστε ξανά τις παραμέτρους που σας ζητήθηκαν, με σωστό τρόπο αυτή τη φορά!")
+                continue
+
+        self.plot_data()
+
 if __name__=='__main__':
     pr = Problem()
-    pr.linear()
+    pr.run()
